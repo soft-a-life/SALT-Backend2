@@ -54,7 +54,7 @@ public class SecurityConfig {
     private  String jwtSecret;
 
     //dev
-    public SecurityConfig(OAuth2UserService oAuth2UserService, JwtConfig jwtConfig) {
+    public SecurityConfig(OAuth2UserService oAuth2UserService) {
         this.oAuth2UserService = oAuth2UserService;
     }
 
