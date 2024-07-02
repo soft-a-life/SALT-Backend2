@@ -39,7 +39,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.web.client.RestTemplate;
 
-// SecurityConfig.java
 
 @Configuration
 @EnableMethodSecurity
