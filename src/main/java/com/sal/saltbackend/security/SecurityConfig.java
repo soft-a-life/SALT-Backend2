@@ -43,7 +43,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-
+    //커밋 test
     // OAuth2 클라이언트 정보를 관리하는 서비스입니다.
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
