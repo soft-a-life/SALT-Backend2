@@ -39,127 +39,98 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.web.client.RestTemplate;
 
+// SecurityConfig.java
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-    @Autowired
-    private ClientRegistrationRepository clientRegistrationRepository;
 
+    // OAuth2 클라이언트 정보를 관리하는 서비스입니다.
     @Autowired
     private OAuth2AuthorizedClientService authorizedClientService;
 
-
-    private final OAuth2UserService oAuth2UserService;
+    // application.properties 파일에서 jwt.secret 값을 읽어옵니다.
     @Value("${jwt.secret}")
-    private  String jwtSecret;
+    private String jwtSecret;
 
-    //dev
+    // OAuth2UserService는 OAuth2 사용자 정보를 가져오는 서비스입니다.
+    private final OAuth2UserService oAuth2UserService;
+
+    // 생성자를 통해 oAuth2UserService를 주입받습니다.
     public SecurityConfig(OAuth2UserService oAuth2UserService) {
         this.oAuth2UserService = oAuth2UserService;
     }
 
-    //////////////
-    // OAuth2UserService 설정
-    @Bean
-    public OAuth2UserService oAuth2UserService() {
-        return new DefaultOAuth2UserService();
-    }
-/////////////////////////
-
-    //HTTP 보안 필터 체인을 구성
-//    HttpSecurity 객체는 HTTP 요청 및 응답에 대한 보안 구성을 제공
+    // SecurityFilterChain 빈을 생성하여 HTTP 보안 구성을 정의합니다.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                //요청에 대한 인가 구성을 설정 -> anyRequest().permitAll()은 모든 요청을 허용
-                .authorizeRequests(config -> config.anyRequest().permitAll())
+                // 모든 요청을 허용하도록 설정합니다.
+                .authorizeRequests(config -> config
+                        .anyRequest().permitAll())
+                // OAuth2 로그인 설정을 정의합니다.
                 .oauth2Login(oauth2Configurer -> oauth2Configurer
-//                        loginPage("/login"): 사용자를 로그인 페이지(/login)로 리다이렉트합니다.
+                        // 로그인 페이지 URL을 설정합니다.
                         .loginPage("/kakao/signin")
-//                        로그인 성공 시 호출할 핸들러를 설정합니다. 이 핸들러는 사용자의 로그인 정보를 처리하고, 이후의 동작을 결정합니다.
-//                        .successHandler(successHandler())
+                        // 로그인 성공 시 호출할 핸들러를 설정합니다.
                         .successHandler(successHandler())
-//                        OAuth2User 정보를 가져오는 엔드포인트 설정입니다. userService(oAuth2UserService)는 사용자 정보를 가져오는 데 사용할 OAuth2UserService를 설정합니다.
+                        // 사용자 정보를 가져오는 엔드포인트를 설정합니다.
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)
                         )
                 )
-//        CSRF 토큰 리포지토리를 설정합니다. CSRF 토큰은 웹 애플리케이션의 폼 기반 요청에서 사용되며, 이를 통해 악의적인 사이트로부터의 요청을 방지합니다.
-                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()));
-
-//        설정한 HttpSecurity를 반환합니다.
+                // CSRF 보호를 비활성화합니다.
+                .csrf(csrf -> csrf.disable());
         return http.build();
     }
-
+    // 인증 성공 시 실행될 AuthenticationSuccessHandler를 정의합니다.
     @Bean
     public AuthenticationSuccessHandler successHandler() {
         return new AuthenticationSuccessHandler() {
             @Override
-            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException, IOException {
-                ///////////
-                OAuth2AuthenticationToken oauth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
-                OAuth2AuthorizedClient authorizedClient =
-                        authorizedClientService.loadAuthorizedClient(
-                                oauth2AuthenticationToken.getAuthorizedClientRegistrationId(),
-                                oauth2AuthenticationToken.getName());
+            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                  //이 부분이 카카오에서 받은 토큰을 가져오는 코드임.
+//                // OAuth2AuthenticationToken을 가져옵니다.
+//                OAuth2AuthenticationToken oauth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
+//                // OAuth2AuthorizedClient를 사용하여 액세스 토큰을 가져옵니다.
+//                OAuth2AuthorizedClient authorizedClient =
+//                        authorizedClientService.loadAuthorizedClient(
+//                                oauth2AuthenticationToken.getAuthorizedClientRegistrationId(),
+//                                oauth2AuthenticationToken.getName());
 
-
-                ////////////
+                // 인증된 사용자 정보를 가져옵니다.
                 DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
 
+                // 사용자 정보를 추출합니다.
                 String id = defaultOAuth2User.getAttribute("id").toString();
                 Map<String, Object> profileInfo = defaultOAuth2User.getAttribute("kakao_account");
                 String nickname = (String) ((Map<String, Object>) profileInfo.get("profile")).get("nickname");
                 String email = (String) profileInfo.get("email");
 
-
-                // 카카오에서받은 accesstoken을 통해 카카오 api 요청
-                RestTemplate restTemplate = new RestTemplate();
-                HttpHeaders headers = new HttpHeaders();
-//                headers.setBearerAuth((String) ((OAuth2AccessToken) authentication.getCredentials()).getTokenValue());
-                headers.setBearerAuth((String) authorizedClient.getAccessToken().getTokenValue());
-                HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-                ResponseEntity<String> responseEntity = restTemplate.exchange("https://kapi.kakao.com/v2/user/me", HttpMethod.GET, requestEntity, String.class);
-                if (responseEntity.getStatusCode().is2xxSuccessful()) {
-                    String kakaoResponseBody = responseEntity.getBody();
-                    System.out.println("Kakao API로부터 받은 사용자 정보: " + kakaoResponseBody);
-                } else {
-                    System.out.println("카카오 API로부터 사용자 정보를 가져오는 데 실패했습니다.");
-                }
-
-
-
                 String jwtToken = generateToken(id, email, nickname);
 
-                response.setContentType("application/json");
-                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-//                response.getWriter().write("{\"token\": \"" + jwtToken + "\"}")
-                response.getWriter().write("{\"token\": \"" + jwtToken + "\", \"accessToken\": \"" + authorizedClient.getAccessToken().getTokenValue() + "\"}");
-            }
-//aa
-            private String generateToken(String id, String email, String nickname) {
-                long expirationTime = 3600000; // 토큰 만료 시간(1시간)
+                // JWT 토큰을 응답에 추가
+                response.setHeader("Authorization", "Bearer " + jwtToken);
 
-                // 보안 키 생성
-                byte[] keyBytes = jwtSecret.getBytes();
-                // 256비트 이상의 키 크기로 보안 키 생성
+                // 로그인 성공 후 /login/success로 리디렉션
+                response.sendRedirect("/login/success");
+            }
+            // JWT 토큰을 생성하는 메서드입니다.
+            private String generateToken(String id, String email, String nickname) {
+                // JWT 서명에 사용할 키를 생성합니다.
+                byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
                 Key key = Keys.hmacShaKeyFor(keyBytes);
 
+                // JWT 토큰을 생성하고 반환합니다.
                 return Jwts.builder()
                         .setSubject(id)
                         .claim("email", email)
                         .claim("nickname", nickname)
-//                        .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
-                        .signWith(Keys.hmacShaKeyFor(keyBytes))
+                        .signWith(key)
                         .compact();
             }
         };
     }
 
-    private CsrfTokenRepository csrfTokenRepository() {
-        HttpSessionCsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
-        repository.setSessionAttributeName("_csrf");
-        return repository;
-    }
 }
 
