@@ -1,53 +1,59 @@
 package com.sal.saltbackend.controller;
 
+import com.sal.saltbackend.dto.user_dto;
+import com.sal.saltbackend.entity.user;
+import com.sal.saltbackend.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
-@RequestMapping("/kakao/signin")
+import java.util.Map;
+import java.util.Optional;
+
+
+@RestController
+@RequestMapping("/login")
 public class LoginController {
 
-    @GetMapping
-    public  String login(){
+    @Autowired
+    private UserRepository userRepository;
 
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//
-//        // 사용자 정보가 OAuth2User 타입인 경우에만 처리
-//        if (authentication.getPrincipal() instanceof OAuth2User) {
-//            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-//
-//            // 사용자의 id, email, nickname을 가져옵니다.
-//            String id = oauth2User.getAttribute("id").toString();
-//            String email = (String) oauth2User.getAttribute("email");
-//            String nickname = (String) ((Map<String, Object>) oauth2User.getAttribute("kakao_account").get("profile")).get("nickname");
-//
-//            // 이후 원하는 동작 수행
-//            // 예를 들어, 사용자 정보를 데이터베이스에 저장하거나, 이미 저장된 정보와 비교하여 권한 부여 등의 동작 수행
-//            // ...
-//
-//            // 로그인 성공 후, 이동할 페이지를 리턴합니다.
-//            return "redirect:/success"; // 성공 페이지 URL로 변경하세요
-//        }
-
+    @GetMapping("/kakao/signin")
+    public String kakaologin() {
+        System.out.println("here");
         return "login";
     }
-//    @GetMapping("/")
-//    @ResponseBody
-//    public String main()
-//    {
-//        return "Hello world";
-//    }
-//
-//    @RequestMapping("/login")
-//    @ResponseBody
-//    public String login()
-//    {
-//        return "index";
+
+//    @GetMapping("/oauth2/code/kakao")
+//    public String hi(){
+//        System.out.println("here2");
+//        return "loginsuccess";
 //    }
 
+//    @GetMapping("/success")
+//    public String success() {
+//        // 로그인 성공 후 loginsuccess.html로 리다이렉트
+//        return "loginsuccess";
+//    }
 
+    @GetMapping("/success")
+    public user_dto success() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = oAuth2User.getAttribute("email");
 
-
+        Optional<user> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            user user = userOptional.get();
+            String userUuid = user.getUserUuid() != null ? user.getUserUuid().toString() : null;
+            return new user_dto(user.getNickname(), user.getEmail(), userUuid);
+        } else {
+            // 예외 처리
+            throw new RuntimeException("User not found");
+        }
+    }
 }
+
