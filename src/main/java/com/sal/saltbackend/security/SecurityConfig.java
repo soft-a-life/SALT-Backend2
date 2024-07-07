@@ -1,5 +1,8 @@
 package com.sal.saltbackend.security;
 
+import com.sal.saltbackend.dto.user_dto;
+import com.sal.saltbackend.entity.user;
+import com.sal.saltbackend.repository.UserRepository;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,10 +33,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -43,6 +43,8 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+    @Autowired
+    private UserRepository userRepository;
     //커밋 test
     // OAuth2 클라이언트 정보를 관리하는 서비스입니다.
     @Autowired
@@ -82,45 +84,43 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable());
         return http.build();
     }
-    // 인증 성공 시 실행될 AuthenticationSuccessHandler를 정의합니다.
+
     @Bean
     public AuthenticationSuccessHandler successHandler() {
         return new AuthenticationSuccessHandler() {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-                  //이 부분이 카카오에서 받은 토큰을 가져오는 코드임.
-//                // OAuth2AuthenticationToken을 가져옵니다.
-//                OAuth2AuthenticationToken oauth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
-//                // OAuth2AuthorizedClient를 사용하여 액세스 토큰을 가져옵니다.
-//                OAuth2AuthorizedClient authorizedClient =
-//                        authorizedClientService.loadAuthorizedClient(
-//                                oauth2AuthenticationToken.getAuthorizedClientRegistrationId(),
-//                                oauth2AuthenticationToken.getName());
-
                 // 인증된 사용자 정보를 가져옵니다.
-                DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
+                Object principal = authentication.getPrincipal();
 
-                // 사용자 정보를 추출합니다.
-                String id = defaultOAuth2User.getAttribute("id").toString();
-                Map<String, Object> profileInfo = defaultOAuth2User.getAttribute("kakao_account");
-                String nickname = (String) ((Map<String, Object>) profileInfo.get("profile")).get("nickname");
-                String email = (String) profileInfo.get("email");
+                if (principal instanceof DefaultOAuth2User) {
+                    DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) principal;
 
-                String jwtToken = generateToken(id, email, nickname);
+                    // 사용자 정보를 추출합니다.
+                    String id = defaultOAuth2User.getAttribute("id").toString();
+                    Map<String, Object> profileInfo = defaultOAuth2User.getAttribute("kakao_account");
+                    String nickname = (String) ((Map<String, Object>) profileInfo.get("profile")).get("nickname");
+                    String email = (String) profileInfo.get("email");
 
-                // JWT 토큰을 응답에 추가
-                response.setHeader("Authorization", "Bearer " + jwtToken);
+                    String jwtToken = generateToken(id, email, nickname);
 
-                // 로그인 성공 후 /login/success로 리디렉션
-                response.sendRedirect("/login/success");
+                    // JWT 토큰을 응답에 추가
+                    response.setHeader("Authorization", "Bearer " + jwtToken);
+
+                    // 로그인 성공 후 프론트엔드 경로로 리디렉션
+//                    response.sendRedirect("http://172.20.10.14:3000/login/success");
+                    // 로그인 성공 후 프론트엔드 경로로 리디렉션
+                    response.sendRedirect("http://localhost:3000/login/success?token=" + jwtToken);
+                } else {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user principal type");
+                }
             }
+
             // JWT 토큰을 생성하는 메서드입니다.
             private String generateToken(String id, String email, String nickname) {
-                // JWT 서명에 사용할 키를 생성합니다.
                 byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
                 Key key = Keys.hmacShaKeyFor(keyBytes);
 
-                // JWT 토큰을 생성하고 반환합니다.
                 return Jwts.builder()
                         .setSubject(id)
                         .claim("email", email)
@@ -130,6 +130,55 @@ public class SecurityConfig {
             }
         };
     }
+
+//    // 인증 성공 시 실행될 AuthenticationSuccessHandler를 정의합니다.
+//    @Bean
+//    public AuthenticationSuccessHandler successHandler() {
+//        return new AuthenticationSuccessHandler() {
+//            @Override
+//            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+//                  //이 부분이 카카오에서 받은 토큰을 가져오는 코드임.
+////                // OAuth2AuthenticationToken을 가져옵니다.
+////                OAuth2AuthenticationToken oauth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
+////                // OAuth2AuthorizedClient를 사용하여 액세스 토큰을 가져옵니다.
+////                OAuth2AuthorizedClient authorizedClient =
+////                        authorizedClientService.loadAuthorizedClient(
+////                                oauth2AuthenticationToken.getAuthorizedClientRegistrationId(),
+////                                oauth2AuthenticationToken.getName());
+//
+//                // 인증된 사용자 정보를 가져옵니다.
+//                DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
+//
+//                // 사용자 정보를 추출합니다.
+//                String id = defaultOAuth2User.getAttribute("id").toString();
+//                Map<String, Object> profileInfo = defaultOAuth2User.getAttribute("kakao_account");
+//                String nickname = (String) ((Map<String, Object>) profileInfo.get("profile")).get("nickname");
+//                String email = (String) profileInfo.get("email");
+//
+//                String jwtToken = generateToken(id, email, nickname);
+//
+//                // JWT 토큰을 응답에 추가
+//                response.setHeader("Authorization", "Bearer " + jwtToken);
+//
+//                // 로그인 성공 후 /login/success로 리디렉션
+//                response.sendRedirect("/login/success");
+//            }
+//            // JWT 토큰을 생성하는 메서드입니다.
+//            private String generateToken(String id, String email, String nickname) {
+//                // JWT 서명에 사용할 키를 생성합니다.
+//                byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+//                Key key = Keys.hmacShaKeyFor(keyBytes);
+//
+//                // JWT 토큰을 생성하고 반환합니다.
+//                return Jwts.builder()
+//                        .setSubject(id)
+//                        .claim("email", email)
+//                        .claim("nickname", nickname)
+//                        .signWith(key)
+//                        .compact();
+//            }
+//        };
+//    }
 
 }
 
