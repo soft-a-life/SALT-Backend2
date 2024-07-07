@@ -6,6 +6,7 @@ import com.sal.saltbackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -27,33 +28,33 @@ public class LoginController {
         return "login";
     }
 
-//    @GetMapping("/oauth2/code/kakao")
-//    public String hi(){
-//        System.out.println("here2");
-//        return "loginsuccess";
-//    }
-
 //    @GetMapping("/success")
-//    public String success() {
-//        // 로그인 성공 후 loginsuccess.html로 리다이렉트
-//        return "loginsuccess";
+//    public user_dto success() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//
+//        // 인증된 사용자 정보를 가져옵니다.
+//        DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
+//        // 사용자 정보를 추출합니다.
+//        String id = defaultOAuth2User.getAttribute("id").toString();
+//        Map<String, Object> profileInfo = defaultOAuth2User.getAttribute("kakao_account");
+//        String nickname = (String) ((Map<String, Object>) profileInfo.get("profile")).get("nickname");
+//        String email = (String) profileInfo.get("email");
+//
+//        System.out.println("id : " + id);
+//        System.out.println("nickname : " +  nickname);
+//        System.out.println("emai :" + email);
+//
+//        Optional<user> userOptional = userRepository.findByEmail(email);
+//
+//        if (userOptional.isPresent()) {
+//            user user = userOptional.get();
+//            String userUuid = user.getUserUuid() != null ? user.getUserUuid().toString() : null;
+//            System.out.println("here");
+//            return new user_dto(user.getNickname(), user.getEmail(), userUuid);
+//        } else {
+//            // 예외 처리
+//            throw new RuntimeException("User not found");
+//        }
 //    }
-
-    @GetMapping("/success")
-    public user_dto success() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = oAuth2User.getAttribute("email");
-
-        Optional<user> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isPresent()) {
-            user user = userOptional.get();
-            String userUuid = user.getUserUuid() != null ? user.getUserUuid().toString() : null;
-            return new user_dto(user.getNickname(), user.getEmail(), userUuid);
-        } else {
-            // 예외 처리
-            throw new RuntimeException("User not found");
-        }
-    }
 }
 
