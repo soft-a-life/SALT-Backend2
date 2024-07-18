@@ -110,7 +110,12 @@ public class SecurityConfig {
                     // 로그인 성공 후 프론트엔드 경로로 리디렉션
 //                    response.sendRedirect("http://172.20.10.14:3000/login/success");
                     // 로그인 성공 후 프론트엔드 경로로 리디렉션
-                    response.sendRedirect("http://localhost:3000/login/success?token=" + jwtToken);
+//                    response.sendRedirect("http://localhost:3000/login/success?token=" + jwtToken);
+
+                    // 로그인 성공 후 프론트엔드 경로로 리디렉션
+                    String redirectUrl = String.format("http://localhost:3000/login/success?token=%s&email=%s", jwtToken, email);
+                    response.sendRedirect(redirectUrl);
+
                 } else {
                     response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user principal type");
                 }
