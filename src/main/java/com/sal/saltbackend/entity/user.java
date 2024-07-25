@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-//@Table(name = "user")
 public class user {
 
     @Id
@@ -29,7 +28,7 @@ public class user {
     private String deletedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<BoardList> boardLists;
+    private List<board> boardLists;
 
     // getters and setters
     public Long getId() {
