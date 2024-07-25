@@ -12,10 +12,14 @@ import java.util.List;
 @Entity
 @Setter
 @Table(name = "board")
-public class Board {
+public class board {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private user user;
 
     @Column(nullable = false)
     @CreationTimestamp
@@ -28,10 +32,7 @@ public class Board {
     private String board_content;
 
     @Column(nullable = false)
-    private String categoru;
-
-    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
-    private List<BoardList> boardLists;
+    private String category;
 
     public void setBoard_content(String board_content) {
         this.board_content = board_content;
@@ -41,7 +42,27 @@ public class Board {
         this.board_title = board_title;
     }
 
-    public void setCategoru(String categoru) {
-        this.categoru = categoru;
+    public void setCategoru(String category) {
+        this.category = category;
+    }
+
+    public void setUser(com.sal.saltbackend.entity.user user) {
+        this.user = user;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getBoard_title() {
+        return board_title;
+    }
+
+    public String getBoard_content() {
+        return board_content;
+    }
+
+    public String getCategory() {
+        return category;
     }
 }

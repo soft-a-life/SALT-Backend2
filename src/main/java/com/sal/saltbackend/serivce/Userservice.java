@@ -21,8 +21,8 @@ public class Userservice{
         return userRepository.save(user_one);
     }
 
-    public user findById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public Optional<user> findById(Long id) {
+        return Optional.ofNullable(userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found")));
     }
 
 }

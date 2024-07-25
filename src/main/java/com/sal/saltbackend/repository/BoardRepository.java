@@ -1,11 +1,8 @@
 package com.sal.saltbackend.repository;
 
-import com.sal.saltbackend.entity.Board;
+import com.sal.saltbackend.entity.board;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-
-public interface BoardRepository extends JpaRepository<Board, Long> {
+public interface BoardRepository extends JpaRepository<board, Long> {
 
 }
